@@ -51,6 +51,9 @@ func (s *Server) handleAPI(w http.ResponseWriter, r *http.Request) {
 	case "backup":
 		s.handleBackup(w, r, parts[2:])
 		return
+	case "import":
+		s.handleImportAPI(w, r, parts[2:])
+		return
 	case "user":
 		s.handleUser(w, r, parts[2:])
 		return

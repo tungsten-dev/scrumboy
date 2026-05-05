@@ -21,6 +21,10 @@ import {
   getBackupImportBtn,
   getBackupData,
   getBackupPreview,
+  getTrelloImportBtn,
+  getTrelloImportData,
+  getTrelloImportPreview,
+  getTrelloImportResult,
   getBoardMembers
 } from '../state/selectors.js';
 import { 
@@ -31,10 +35,14 @@ import {
   setBackupImportBtn,
   setBackupData,
   setBackupPreview,
+  setTrelloImportBtn,
+  setTrelloImportData,
+  setTrelloImportPreview,
+  setTrelloImportResult,
   setUser,
   setBoardMembers,
 } from '../state/mutations.js';
-import { BackupPreviewResponse, User } from '../types.js';
+import { BackupPreviewResponse, TrelloImportPreviewResponse, TrelloImportResponse, User } from '../types.js';
 import { renderRealBurndownChart, destroyBurndownChart, mountBurndownChart } from '../charts/burndown.js';
 import { emit } from '../events.js';
 import { normalizeSprints } from '../sprints.js';
@@ -203,7 +211,7 @@ function getTagColor(tagName: string): string | null {
 }
 
 // Render backup tab HTML
-function renderBackupTabHTML(): string {
+export function renderBackupTabHTML(): string {
   const isAnonymousMode = !getAuthStatusAvailable();
   const replaceDisabled = isAnonymousMode ? 'disabled' : '';
   const replaceHidden = isAnonymousMode ? 'style="display: none;"' : '';
@@ -239,6 +247,18 @@ function renderBackupTabHTML(): string {
         </div>
         <div id="backupWarnings" class="settings-backup-warnings" style="display: none; margin-bottom: 16px; padding: 12px; background: var(--panel); border-radius: 4px; color: var(--muted);"></div>
         <button class="btn" type="button" id="backupImportBtn" disabled>Import</button>
+      </div>
+      <div class="settings-backup-import" style="margin-top: 24px;">
+        <div class="settings-section__title">Import Trello Board</div>
+        <div class="settings-section__description muted">Upload a native Trello single-board JSON export, preview the conversion, then import it as a new Scrumboy board.</div>
+        <input type="file" accept=".json,application/json" id="trelloImportFileInput" style="margin-bottom: 12px;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+          <button class="btn btn--ghost" type="button" id="trelloImportPreviewBtn">Preview Trello Import</button>
+          <button class="btn" type="button" id="trelloImportBtn" disabled>Import Trello Board</button>
+        </div>
+        <div id="trelloImportPreview" class="settings-backup-preview" style="display: none; margin-bottom: 16px; padding: 12px; background: var(--panel); border-radius: 4px;"></div>
+        <div id="trelloImportWarnings" class="settings-backup-warnings" style="display: none; margin-bottom: 16px; padding: 12px; background: var(--panel); border-radius: 4px; color: var(--muted);"></div>
+        <div id="trelloImportResult" class="settings-backup-preview" style="display: none; padding: 12px; background: var(--panel); border-radius: 4px;"></div>
       </div>
     </div>
   `;
@@ -534,6 +554,211 @@ async function handleBackupImport(): Promise<void> {
   }
 }
 
+export function updateTrelloImportUI(): void {
+  const previewBtn = document.getElementById("trelloImportPreviewBtn") as HTMLButtonElement | null;
+  const importBtn = (getTrelloImportBtn() || document.getElementById("trelloImportBtn")) as HTMLButtonElement | null;
+  const hasData = !!getTrelloImportData();
+  const preview = getTrelloImportPreview() as TrelloImportPreviewResponse | null;
+  const canImport = !!(hasData && preview && (!preview.hardErrors || preview.hardErrors.length === 0));
+
+  if (previewBtn) {
+    previewBtn.disabled = !hasData;
+  }
+  if (importBtn) {
+    importBtn.disabled = !canImport;
+    if (canImport) {
+      importBtn.removeAttribute("disabled");
+    } else {
+      importBtn.setAttribute("disabled", "disabled");
+    }
+  }
+}
+
+export function renderTrelloPreview(preview: TrelloImportPreviewResponse | null): void {
+  const previewEl = document.getElementById("trelloImportPreview");
+  if (!previewEl) {
+    return;
+  }
+  if (!preview) {
+    previewEl.innerHTML = "";
+    previewEl.style.display = "none";
+    return;
+  }
+  previewEl.innerHTML = `
+    <strong>${escapeHTML(preview.boardName || "Unnamed Trello board")}</strong><br>
+    Open lists: ${preview.openLists}<br>
+    Closed lists: ${preview.closedLists}<br>
+    Cards: ${preview.cards}<br>
+    Archived cards: ${preview.archivedCards}<br>
+    Labels: ${preview.labels}<br>
+    Members referenced: ${preview.membersReferenced}<br>
+    Checklists: ${preview.checklists}<br>
+    Checklist items: ${preview.checklistItems}<br>
+    Comment actions: ${preview.commentCardActions}<br>
+    Attachments: ${preview.attachments}<br>
+    Custom field items: ${preview.customFieldItems}<br>
+    Done column: ${escapeHTML(preview.detectedDoneColumn || "Not detected")}${preview.detectedDoneReason ? ` (${escapeHTML(preview.detectedDoneReason)})` : ""}
+  `;
+  previewEl.style.display = "block";
+}
+
+export function renderTrelloWarnings(preview: TrelloImportPreviewResponse | null): void {
+  const warningsEl = document.getElementById("trelloImportWarnings");
+  if (!warningsEl) {
+    return;
+  }
+  const hardErrors = preview?.hardErrors ?? [];
+  const warnings = preview?.warnings ?? [];
+  if (hardErrors.length === 0 && warnings.length === 0) {
+    warningsEl.innerHTML = "";
+    warningsEl.style.display = "none";
+    return;
+  }
+
+  let html = "";
+  if (hardErrors.length > 0) {
+    html += `<strong>Hard errors</strong><br>${hardErrors.map((item) => escapeHTML(item)).join("<br>")}`;
+  }
+  if (warnings.length > 0) {
+    if (html) html += `<br><br>`;
+    html += `<strong>Warnings</strong><br>${warnings.map((item) => escapeHTML(item)).join("<br>")}`;
+  }
+  warningsEl.innerHTML = html;
+  warningsEl.style.display = "block";
+}
+
+export function renderTrelloImportResult(result: TrelloImportResponse | null): void {
+  const resultEl = document.getElementById("trelloImportResult");
+  if (!resultEl) {
+    return;
+  }
+  if (!result) {
+    resultEl.innerHTML = "";
+    resultEl.style.display = "none";
+    return;
+  }
+
+  resultEl.innerHTML = `
+    <strong>Import complete</strong><br>
+    Created board: <a href="/${encodeURIComponent(result.project.slug)}">${escapeHTML(result.project.name)}</a><br>
+    Todos: ${result.summary.todos}<br>
+    Labels: ${result.summary.labels}
+  `;
+  resultEl.style.display = "block";
+}
+
+async function handleTrelloFileSelect(e: Event): Promise<void> {
+  const target = e.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) {
+    setTrelloImportData(null);
+    setTrelloImportPreview(null);
+    setTrelloImportResult(null);
+    renderTrelloPreview(null);
+    renderTrelloWarnings(null);
+    renderTrelloImportResult(null);
+    updateTrelloImportUI();
+    return;
+  }
+
+  try {
+    const text = await file.text();
+    setTrelloImportData(text);
+    setTrelloImportPreview(null);
+    setTrelloImportResult(null);
+    renderTrelloPreview(null);
+    renderTrelloWarnings(null);
+    renderTrelloImportResult(null);
+    updateTrelloImportUI();
+  } catch (err: any) {
+    showToast(err.message || "Failed to read Trello export");
+    setTrelloImportData(null);
+    setTrelloImportPreview(null);
+    setTrelloImportResult(null);
+    renderTrelloPreview(null);
+    renderTrelloWarnings(null);
+    renderTrelloImportResult(null);
+    updateTrelloImportUI();
+  }
+}
+
+export async function handleTrelloPreview(): Promise<void> {
+  const raw = getTrelloImportData();
+  if (!raw) {
+    showToast("Select a Trello JSON export first");
+    return;
+  }
+
+  const previewBtn = document.getElementById("trelloImportPreviewBtn") as HTMLButtonElement | null;
+  try {
+    if (previewBtn) {
+      previewBtn.disabled = true;
+      previewBtn.textContent = "Previewing...";
+    }
+    const preview = await apiFetch<TrelloImportPreviewResponse>("/api/import/trello/preview", {
+      method: "POST",
+      body: raw,
+    });
+    setTrelloImportPreview(preview);
+    setTrelloImportResult(null);
+    renderTrelloPreview(preview);
+    renderTrelloWarnings(preview);
+    renderTrelloImportResult(null);
+    updateTrelloImportUI();
+  } catch (err: any) {
+    showToast(err.message || "Trello preview failed");
+    setTrelloImportPreview(null);
+    renderTrelloPreview(null);
+    renderTrelloWarnings(null);
+    updateTrelloImportUI();
+  } finally {
+    if (previewBtn) {
+      previewBtn.textContent = "Preview Trello Import";
+    }
+    updateTrelloImportUI();
+  }
+}
+
+export async function handleTrelloImport(): Promise<void> {
+  const raw = getTrelloImportData();
+  const preview = getTrelloImportPreview() as TrelloImportPreviewResponse | null;
+  if (!raw) {
+    showToast("Select a Trello JSON export first");
+    return;
+  }
+  if (!preview) {
+    showToast("Preview the Trello import before importing");
+    return;
+  }
+  if (preview.hardErrors && preview.hardErrors.length > 0) {
+    showToast("Resolve the Trello import errors before importing");
+    return;
+  }
+
+  const importBtn = (getTrelloImportBtn() || document.getElementById("trelloImportBtn")) as HTMLButtonElement | null;
+  try {
+    if (importBtn) {
+      importBtn.disabled = true;
+      importBtn.textContent = "Importing...";
+    }
+    const result = await apiFetch<TrelloImportResponse>("/api/import/trello", {
+      method: "POST",
+      body: raw,
+    });
+    setTrelloImportResult(result);
+    renderTrelloImportResult(result);
+    renderTrelloWarnings(preview);
+    showToast(`Imported Trello board: ${result.project.name}`);
+  } catch (err: any) {
+    showToast(err.message || "Trello import failed");
+  } finally {
+    if (importBtn) {
+      importBtn.textContent = "Import Trello Board";
+    }
+    updateTrelloImportUI();
+  }
+}
+
 async function setupBackupTab(signal?: AbortSignal): Promise<void> {
   // Export button
   const exportBtn = document.getElementById("backupExportBtn");
@@ -583,10 +808,30 @@ async function setupBackupTab(signal?: AbortSignal): Promise<void> {
     importBtn.addEventListener("click", handleBackupImport, signal ? { signal } : undefined);
     setBackupImportBtn(importBtn);
   }
+
+  const trelloFileInput = document.getElementById("trelloImportFileInput");
+  if (trelloFileInput) {
+    trelloFileInput.addEventListener("change", handleTrelloFileSelect, signal ? { signal } : undefined);
+  }
+
+  const trelloPreviewBtn = document.getElementById("trelloImportPreviewBtn");
+  if (trelloPreviewBtn) {
+    trelloPreviewBtn.addEventListener("click", handleTrelloPreview, signal ? { signal } : undefined);
+  }
+
+  const trelloImportBtn = document.getElementById("trelloImportBtn");
+  if (trelloImportBtn) {
+    trelloImportBtn.addEventListener("click", handleTrelloImport, signal ? { signal } : undefined);
+    setTrelloImportBtn(trelloImportBtn);
+  }
   
   // Call updateBackupUI to set initial state after a brief delay to ensure DOM is ready
   setTimeout(() => {
     updateBackupUI();
+    renderTrelloPreview((getTrelloImportPreview() as TrelloImportPreviewResponse | null) ?? null);
+    renderTrelloWarnings((getTrelloImportPreview() as TrelloImportPreviewResponse | null) ?? null);
+    renderTrelloImportResult((getTrelloImportResult() as TrelloImportResponse | null) ?? null);
+    updateTrelloImportUI();
   }, 0);
 }
 

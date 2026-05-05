@@ -1,0 +1,228 @@
+{
+  "id": "board-real-1",
+  "name": "Fixture Board",
+  "desc": "Fixture desc",
+  "url": "https://trello.com/b/real123/fixture-board",
+  "shortUrl": "https://trello.com/b/real123",
+  "closed": false,
+  "prefs": {
+    "permissionLevel": "private"
+  },
+  "limits": {
+    "cards": {
+      "openPerBoard": {
+        "status": "ok"
+      }
+    }
+  },
+  "lists": [
+    {
+      "id": "list-open-1",
+      "name": "Doing",
+      "pos": 16384,
+      "closed": false,
+      "subscribed": false
+    },
+    {
+      "id": "list-open-2",
+      "name": "Done",
+      "pos": 32768,
+      "closed": false
+    },
+    {
+      "id": "list-closed-1",
+      "name": "Closed Lane",
+      "pos": 49152,
+      "closed": true
+    }
+  ],
+  "labels": [
+    {
+      "id": "label-1",
+      "name": "",
+      "color": "green"
+    },
+    {
+      "id": "label-2",
+      "name": "Feature",
+      "color": "blue"
+    }
+  ],
+  "members": [
+    {
+      "id": "mem-1",
+      "fullName": "Alice Example",
+      "username": "alice"
+    },
+    {
+      "id": "mem-2",
+      "fullName": "Bob Example",
+      "username": "bob"
+    }
+  ],
+  "customFields": [
+    {
+      "id": "cf-1",
+      "name": "Priority",
+      "type": "list",
+      "options": [
+        {
+          "id": "opt-1",
+          "value": {
+            "text": "High"
+          },
+          "color": "red"
+        }
+      ]
+    },
+    {
+      "id": "cf-2",
+      "name": "Estimate",
+      "type": "number",
+      "options": null
+    }
+  ],
+  "cards": [
+    {
+      "id": "card1",
+      "name": "Real open card",
+      "desc": "Body text",
+      "idList": "list-open-1",
+      "pos": 1000,
+      "closed": false,
+      "due": null,
+      "start": "2026-01-01T10:00:00.000Z",
+      "idLabels": [
+        "label-1",
+        "label-2"
+      ],
+      "labels": [
+        {
+          "id": "label-1",
+          "name": "",
+          "color": "green"
+        },
+        {
+          "id": "label-2",
+          "name": "Feature",
+          "color": "blue"
+        }
+      ],
+      "idMembers": [
+        "mem-1",
+        "mem-2"
+      ],
+      "idChecklists": [
+        "chk-1"
+      ],
+      "url": "https://trello.com/c/card1",
+      "shortUrl": "https://trello.com/c/card1",
+      "attachments": [
+        {
+          "id": "att-1",
+          "name": "Spec",
+          "url": "https://example.com/spec",
+          "bytes": 1234,
+          "mimeType": "text/plain"
+        },
+        {
+          "id": "att-2",
+          "name": "",
+          "url": "https://example.com/file2"
+        }
+      ],
+      "customFieldItems": [
+        {
+          "idCustomField": "cf-1",
+          "idValue": "opt-1"
+        },
+        {
+          "idCustomField": "cf-2",
+          "value": {
+            "number": "8"
+          }
+        }
+      ],
+      "badges": {
+        "attachments": 2
+      }
+    },
+    {
+      "id": "card2",
+      "name": "Archived from closed list",
+      "desc": "",
+      "idList": "list-closed-1",
+      "pos": 2000,
+      "closed": true,
+      "cover": null
+    }
+  ],
+  "checklists": [
+    {
+      "id": "chk-1",
+      "name": "Checklist",
+      "idCard": "card1",
+      "checkItems": [
+        {
+          "name": "Done item",
+          "state": "complete",
+          "pos": 100
+        },
+        {
+          "name": "Todo item",
+          "state": "incomplete",
+          "pos": 200
+        }
+      ],
+      "limits": {
+        "checkItems": {
+          "perChecklist": {
+            "status": "ok"
+          }
+        }
+      }
+    }
+  ],
+  "actions": [
+    {
+      "id": "act-1",
+      "type": "commentCard",
+      "date": "2026-01-02T12:00:00.000Z",
+      "idMemberCreator": "mem-2",
+      "data": {
+        "text": "Latest comment",
+        "card": {
+          "id": "card1"
+        },
+        "list": {
+          "id": "list-open-1",
+          "name": "Doing"
+        }
+      },
+      "memberCreator": {
+        "id": "mem-2",
+        "fullName": "Bob Example",
+        "username": "bob"
+      },
+      "display": {
+        "translationKey": "action_comment_on_card"
+      }
+    },
+    {
+      "id": "act-2",
+      "type": "updateCard",
+      "date": "2026-01-03T12:00:00.000Z",
+      "data": {
+        "card": {
+          "id": "card1"
+        }
+      }
+    }
+  ],
+  "pluginData": [
+    {
+      "id": "plugin-1",
+      "value": "{}"
+    }
+  ]
+}

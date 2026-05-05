@@ -120,6 +120,22 @@ export function getBackupPreview(): unknown {
   return current.backupPreview;
 }
 
+export function getTrelloImportBtn(): HTMLElement | null | undefined {
+  return current.trelloImportBtn;
+}
+
+export function getTrelloImportData(): string | null | undefined {
+  return current.trelloImportData;
+}
+
+export function getTrelloImportPreview(): unknown {
+  return current.trelloImportPreview;
+}
+
+export function getTrelloImportResult(): unknown {
+  return current.trelloImportResult;
+}
+
 export function getBoardMembers(): BoardMember[] {
   return current.boardMembers ?? [];
 }

@@ -9,10 +9,11 @@ import (
 )
 
 type Config struct {
-	BindAddr            string
-	DataDir             string
-	DBPath              string
-	MaxRequestBodyBytes int64
+	BindAddr             string
+	DataDir              string
+	DBPath               string
+	MaxRequestBodyBytes  int64
+	MaxTrelloImportBytes int64
 
 	SQLiteBusyTimeout int
 	SQLiteJournalMode string
@@ -62,10 +63,11 @@ func FromEnv() Config {
 	}
 
 	return Config{
-		BindAddr:            getenv("BIND_ADDR", ":8080"),
-		DataDir:             dataDir,
-		DBPath:              dbPath,
-		MaxRequestBodyBytes: int64(getenvInt("MAX_REQUEST_BODY_BYTES", 1<<20)), // 1 MiB
+		BindAddr:             getenv("BIND_ADDR", ":8080"),
+		DataDir:              dataDir,
+		DBPath:               dbPath,
+		MaxRequestBodyBytes:  int64(getenvInt("MAX_REQUEST_BODY_BYTES", 1<<20)),   // 1 MiB
+		MaxTrelloImportBytes: int64(getenvInt("MAX_TRELLO_IMPORT_BYTES", 32<<20)), // 32 MiB
 
 		SQLiteBusyTimeout: getenvInt("SQLITE_BUSY_TIMEOUT_MS", 30000), // 30 seconds for write-heavy operations
 		SQLiteJournalMode: getenv("SQLITE_JOURNAL_MODE", "WAL"),
@@ -86,10 +88,10 @@ func FromEnv() Config {
 		OIDCRedirectURL:       strings.TrimSpace(os.Getenv("SCRUMBOY_OIDC_REDIRECT_URL")),
 		OIDCLocalAuthDisabled: strings.TrimSpace(strings.ToLower(os.Getenv("SCRUMBOY_OIDC_LOCAL_AUTH_DISABLED"))) == "true",
 
-		VAPIDPublicKey:       strings.TrimSpace(os.Getenv("SCRUMBOY_VAPID_PUBLIC_KEY")),
-		VAPIDPrivateKey:      strings.TrimSpace(os.Getenv("SCRUMBOY_VAPID_PRIVATE_KEY")),
-		VAPIDSubscriber:      NormalizeVAPIDSubscriber(os.Getenv("SCRUMBOY_VAPID_SUBSCRIBER")),
-		PushDebug: strings.TrimSpace(os.Getenv("SCRUMBOY_DEBUG_PUSH")) == "1",
+		VAPIDPublicKey:  strings.TrimSpace(os.Getenv("SCRUMBOY_VAPID_PUBLIC_KEY")),
+		VAPIDPrivateKey: strings.TrimSpace(os.Getenv("SCRUMBOY_VAPID_PRIVATE_KEY")),
+		VAPIDSubscriber: NormalizeVAPIDSubscriber(os.Getenv("SCRUMBOY_VAPID_SUBSCRIBER")),
+		PushDebug:       strings.TrimSpace(os.Getenv("SCRUMBOY_DEBUG_PUSH")) == "1",
 
 		WallEnabled: wallEnabledFromEnv(),
 	}

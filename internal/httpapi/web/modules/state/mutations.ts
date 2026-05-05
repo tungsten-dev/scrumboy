@@ -130,6 +130,22 @@ export function setBackupPreview(preview: unknown): void {
   current.backupPreview = preview;
 }
 
+export function setTrelloImportBtn(btn: HTMLElement | null | undefined): void {
+  current.trelloImportBtn = btn;
+}
+
+export function setTrelloImportData(data: string | null | undefined): void {
+  current.trelloImportData = data ?? null;
+}
+
+export function setTrelloImportPreview(preview: unknown): void {
+  current.trelloImportPreview = preview;
+}
+
+export function setTrelloImportResult(result: unknown): void {
+  current.trelloImportResult = result;
+}
+
 export function setBoardMembers(members: BoardMember[]): void {
   current.boardMembers = members;
 }
@@ -236,6 +252,10 @@ export function resetUserScopedState(): void {
   current.backupData = undefined;
   current.backupPreview = undefined;
   current.backupImportBtn = undefined;
+  current.trelloImportBtn = undefined;
+  current.trelloImportData = null;
+  current.trelloImportPreview = null;
+  current.trelloImportResult = null;
   current.boardMembers = [];
   current.dashboardSummary = null;
   current.dashboardTodos = [];

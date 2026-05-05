@@ -39,6 +39,10 @@ export interface State {
   backupImportBtn?: HTMLElement | null;
   backupData?: unknown;
   backupPreview?: unknown;
+  trelloImportBtn?: HTMLElement | null;
+  trelloImportData?: string | null;
+  trelloImportPreview?: unknown;
+  trelloImportResult?: unknown;
   boardMembers: BoardMember[];
   dashboardSummary: DashboardSummary | null;
   dashboardTodos: DashboardTodo[];
@@ -70,6 +74,10 @@ let _current: State = {
   settingsProjectId: null,
   authStatusAvailable: false,
   boardMembers: [],
+  trelloImportBtn: null,
+  trelloImportData: null,
+  trelloImportPreview: null,
+  trelloImportResult: null,
   dashboardSummary: null,
   dashboardTodos: [],
   dashboardNextCursor: null,

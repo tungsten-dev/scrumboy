@@ -205,6 +205,47 @@ export interface BackupImportResponse {
   [key: string]: unknown;
 }
 
+export interface TrelloImportPreviewResponse {
+  boardName: string;
+  openLists: number;
+  closedLists: number;
+  cards: number;
+  archivedCards: number;
+  labels: number;
+  membersReferenced: number;
+  checklists: number;
+  checklistItems: number;
+  commentCardActions: number;
+  attachments: number;
+  customFieldItems: number;
+  detectedDoneColumn: string;
+  detectedDoneReason?: string;
+  hardErrors: string[];
+  warnings: string[];
+}
+
+export interface TrelloImportResponse {
+  project: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  summary: {
+    projects: number;
+    todos: number;
+    labels: number;
+    openLists: number;
+    closedLists: number;
+    archivedCards: number;
+    checklists: number;
+    checklistItems: number;
+    commentCardActions: number;
+    attachments: number;
+    customFieldItems: number;
+  };
+  warnings?: string[];
+}
+
 export interface TagResponse extends Array<Tag> {
   // Tag response is an array of Tag
 }

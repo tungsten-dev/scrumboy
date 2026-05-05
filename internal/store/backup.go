@@ -14,6 +14,10 @@ import (
 )
 
 // ExportData represents the complete export structure
+// TODO(v1.2 backup): include projects.import_metadata and todos.import_metadata
+// in ExportData / ProjectExport / TodoExport so Trello provenance survives a
+// Scrumboy backup/restore round-trip. MVP keeps import_metadata DB-only and
+// intentionally leaves the v1.1 backup contract unchanged.
 type ExportData struct {
 	Version    string          `json:"version"`
 	ExportedAt time.Time       `json:"exportedAt"`
@@ -25,42 +29,42 @@ type ExportData struct {
 
 // WorkflowColumnExport represents a workflow column for backup.
 type WorkflowColumnExport struct {
-	Key     string `json:"key"`
-	Name    string `json:"name"`
-	Color   string `json:"color"`
-	Position int   `json:"position"`
-	IsDone  bool   `json:"isDone"`
+	Key      string `json:"key"`
+	Name     string `json:"name"`
+	Color    string `json:"color"`
+	Position int    `json:"position"`
+	IsDone   bool   `json:"isDone"`
 }
 
 // SprintExport represents a sprint for backup (project-scoped).
 type SprintExport struct {
-	Number        int64      `json:"number"`
-	Name          string     `json:"name"`
-	PlannedStartAt int64     `json:"plannedStartAt"` // Unix ms
-	PlannedEndAt   int64     `json:"plannedEndAt"`   // Unix ms
-	State         string     `json:"state"`
-	StartedAt     *int64     `json:"startedAt,omitempty"` // Unix ms
-	ClosedAt      *int64     `json:"closedAt,omitempty"`  // Unix ms
+	Number         int64  `json:"number"`
+	Name           string `json:"name"`
+	PlannedStartAt int64  `json:"plannedStartAt"` // Unix ms
+	PlannedEndAt   int64  `json:"plannedEndAt"`   // Unix ms
+	State          string `json:"state"`
+	StartedAt      *int64 `json:"startedAt,omitempty"` // Unix ms
+	ClosedAt       *int64 `json:"closedAt,omitempty"`  // Unix ms
 }
 
 // ProjectExport represents a project with its todos and tags.
 // EstimationMode is exported for readability only; on import it is ignored and we always use EstimationModeModifiedFibonacci (v1).
 type ProjectExport struct {
-	Slug                string                 `json:"slug"`
-	Name                string                 `json:"name"`
-	EstimationMode      string                 `json:"estimationMode,omitempty"`
-	Image               *string                `json:"image,omitempty"`
-	DominantColor       string                 `json:"dominantColor,omitempty"`
-	DefaultSprintWeeks  int                    `json:"defaultSprintWeeks,omitempty"`
-	ExpiresAt           *time.Time             `json:"expiresAt"`
-	CreatedAt           time.Time              `json:"createdAt"`
-	UpdatedAt           time.Time              `json:"updatedAt"`
-	WorkflowColumns     []WorkflowColumnExport `json:"workflowColumns,omitempty"`
-	Sprints             []SprintExport        `json:"sprints,omitempty"`
-	Todos               []TodoExport           `json:"todos"`
-	Tags                []TagExport            `json:"tags"`
-	Links               []LinkExport           `json:"links,omitempty"`
-	Wall                *WallExport            `json:"wall,omitempty"`
+	Slug               string                 `json:"slug"`
+	Name               string                 `json:"name"`
+	EstimationMode     string                 `json:"estimationMode,omitempty"`
+	Image              *string                `json:"image,omitempty"`
+	DominantColor      string                 `json:"dominantColor,omitempty"`
+	DefaultSprintWeeks int                    `json:"defaultSprintWeeks,omitempty"`
+	ExpiresAt          *time.Time             `json:"expiresAt"`
+	CreatedAt          time.Time              `json:"createdAt"`
+	UpdatedAt          time.Time              `json:"updatedAt"`
+	WorkflowColumns    []WorkflowColumnExport `json:"workflowColumns,omitempty"`
+	Sprints            []SprintExport         `json:"sprints,omitempty"`
+	Todos              []TodoExport           `json:"todos"`
+	Tags               []TagExport            `json:"tags"`
+	Links              []LinkExport           `json:"links,omitempty"`
+	Wall               *WallExport            `json:"wall,omitempty"`
 }
 
 // TodoExport represents a todo in export format
@@ -1944,7 +1948,7 @@ func (s *Store) importTodoTags(ctx context.Context, tx *sql.Tx, projectID, todoI
 			userIDPtr = nil
 		} else {
 			// For authenticated boards, try to get first user or skip tags
-			enabled, err := s.authEnabled(ctx)
+			enabled, err := authEnabledTx(ctx, tx)
 			if err != nil {
 				return err
 			}
@@ -1993,7 +1997,7 @@ func (s *Store) importTag(ctx context.Context, tx *sql.Tx, projectID int64, tagN
 			userIDPtr = nil
 		} else {
 			// For authenticated boards, try to get first user or skip
-			enabled, err := s.authEnabled(ctx)
+			enabled, err := authEnabledTx(ctx, tx)
 			if err != nil {
 				return err
 			}

@@ -1,10 +1,13 @@
 package httpapi
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"scrumboy/internal/store"
 )
@@ -26,6 +29,29 @@ func readJSON(w http.ResponseWriter, r *http.Request, maxBody int64, dst any) er
 		return errors.New("extra json data")
 	}
 	return nil
+}
+
+func readBodyBytes(w http.ResponseWriter, r *http.Request, maxBody int64) ([]byte, error) {
+	if r.Body == nil {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "missing body", nil)
+		return nil, errors.New("missing body")
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxBody)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			writeError(w, http.StatusRequestEntityTooLarge, "PAYLOAD_TOO_LARGE", fmt.Sprintf("upload exceeds the %d byte limit", maxBody), nil)
+			return nil, err
+		}
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "invalid request body", map[string]any{"detail": err.Error()})
+		return nil, err
+	}
+	if len(bytes.TrimSpace(body)) == 0 {
+		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "missing body", nil)
+		return nil, errors.New("missing body")
+	}
+	return body, nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -59,6 +85,10 @@ func writeStoreErr(w http.ResponseWriter, err error, hideUnauthorized bool) {
 	case errors.Is(err, store.Err2FAEncryptionNotConfigured):
 		writeError(w, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", "Two-factor authentication is not configured. Set SCRUMBOY_ENCRYPTION_KEY (e.g. openssl rand -base64 32) and restart.", nil)
 	default:
+		if strings.Contains(err.Error(), "too large") {
+			writeError(w, http.StatusRequestEntityTooLarge, "PAYLOAD_TOO_LARGE", err.Error(), nil)
+			return
+		}
 		writeInternal(w, err)
 	}
 }
@@ -74,4 +104,3 @@ func writeError(w http.ResponseWriter, status int, code, message string, details
 		},
 	})
 }
-

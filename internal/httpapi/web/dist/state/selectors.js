@@ -88,6 +88,18 @@ export function getBackupData() {
 export function getBackupPreview() {
     return current.backupPreview;
 }
+export function getTrelloImportBtn() {
+    return current.trelloImportBtn;
+}
+export function getTrelloImportData() {
+    return current.trelloImportData;
+}
+export function getTrelloImportPreview() {
+    return current.trelloImportPreview;
+}
+export function getTrelloImportResult() {
+    return current.trelloImportResult;
+}
 export function getBoardMembers() {
     return current.boardMembers ?? [];
 }

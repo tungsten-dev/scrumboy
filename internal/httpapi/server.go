@@ -19,9 +19,10 @@ import (
 )
 
 type Options struct {
-	Logger         *log.Logger
-	MaxRequestBody int64
-	ScrumboyMode   string // "full" or "anonymous"
+	Logger              *log.Logger
+	MaxRequestBody      int64
+	MaxTrelloImportBody int64
+	ScrumboyMode        string // "full" or "anonymous"
 	// DataDir is the instance data directory (SQLite lives here; also used for per-user wallpaper files).
 	// Empty disables wallpaper upload/serve (returns 503 for those routes).
 	DataDir       string
@@ -49,14 +50,15 @@ type Options struct {
 type Server struct {
 	store storeAPI
 
-	logger        *log.Logger
-	maxBody       int64
-	mode          string // "full" or "anonymous"
-	hub           *Hub
-	sink          EventSink
-	fanout        *eventbus.Fanout
-	webhookQueue  *webhookQueue
-	webhookCancel context.CancelFunc
+	logger              *log.Logger
+	maxBody             int64
+	maxTrelloImportBody int64
+	mode                string // "full" or "anonymous"
+	hub                 *Hub
+	sink                EventSink
+	fanout              *eventbus.Fanout
+	webhookQueue        *webhookQueue
+	webhookCancel       context.CancelFunc
 
 	authRateLimit *ratelimit.Limiter
 
@@ -190,6 +192,7 @@ type storeAPI interface {
 	ImportProjects(ctx context.Context, data *store.ExportData, mode store.Mode, importMode string) (*store.ImportResult, error)
 	ImportProjectsWithTarget(ctx context.Context, data *store.ExportData, mode store.Mode, importMode string, targetSlug string) (*store.ImportResult, error)
 	PreviewImport(ctx context.Context, data *store.ExportData, mode store.Mode, importMode string) (*store.PreviewResult, error)
+	ImportTrelloProject(ctx context.Context, data *store.ExportData, projectImportMetadata string, todoImportMetadataByLocalID map[int64]string, mode store.Mode) (store.Project, error)
 
 	GetUserPreference(ctx context.Context, userID int64, key string) (string, error)
 	SetUserPreference(ctx context.Context, userID int64, key, value string) error
@@ -271,6 +274,10 @@ func NewServer(st storeAPI, opts Options) *Server {
 	if maxBody <= 0 {
 		maxBody = 1 << 20
 	}
+	maxTrelloImportBody := opts.MaxTrelloImportBody
+	if maxTrelloImportBody <= 0 {
+		maxTrelloImportBody = 32 << 20
+	}
 
 	mode := opts.ScrumboyMode
 	if mode != "full" && mode != "anonymous" {
@@ -310,6 +317,7 @@ func NewServer(st storeAPI, opts Options) *Server {
 		store:                     st,
 		logger:                    logger,
 		maxBody:                   maxBody,
+		maxTrelloImportBody:       maxTrelloImportBody,
 		mode:                      mode,
 		dataDir:                   strings.TrimSpace(opts.DataDir),
 		hub:                       hub,
