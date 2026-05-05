@@ -67,21 +67,42 @@ Open [http://localhost:8080](http://localhost:8080).
 
 ### Environment variables
 
-Note: `scrumboy.env` is not a standard KEY=value file - it contains only the raw encryption key on a single line.
-
 - The app does **not** automatically load `.env` files.
 - On Linux/macOS, export variables manually (for example: `export SCRUMBOY_ENCRYPTION_KEY=...`).
-- Windows helper scripts load `scrumboy.env` automatically.
+- On Windows, `win_run_full.bat` and `win_run_anonymous.bat` manage `data/scrumboy.env` automatically for local convenience.
+- Precedence on Windows is: existing process env var `SCRUMBOY_ENCRYPTION_KEY`, then `data/scrumboy.env`, then legacy root `scrumboy.env`.
+- The canonical Windows-managed local file format is `SCRUMBOY_ENCRYPTION_KEY=<base64-32-byte-key>`.
+- Windows helper scripts still accept legacy raw single-line key files for backward compatibility.
 
-### Encryption key (optional)
+### Encryption key for 2FA/password reset
 
 - `SCRUMBOY_ENCRYPTION_KEY` is **not** required for basic startup.
-- It is required for:
+- It becomes required for encrypted auth/security features, including:
   - 2FA
   - Password reset flows
 - If an existing database already has 2FA-enabled users, startup fails without this key.
+- The key is part of the same backup/restore unit as `data/app.db`. Back them up together.
+- Do **not** regenerate or replace the key casually after encrypted auth/security data exists, or you can break access to 2FA/password-reset data.
 
 Generate a key with: `openssl rand -base64 32`
+
+Example for Docker Compose secret injection:
+
+```yaml
+services:
+  scrumboy:
+    environment:
+      - SCRUMBOY_ENCRYPTION_KEY=${SCRUMBOY_ENCRYPTION_KEY}
+```
+
+Example for systemd secret injection:
+
+```ini
+[Service]
+Environment="SCRUMBOY_ENCRYPTION_KEY=REPLACE_WITH_BASE64_32_BYTE_KEY"
+```
+
+In both cases, the deployment manager is injecting the environment variable. Scrumboy itself does not auto-load these files.
 
 ### OIDC / SSO login (optional)
 
@@ -293,7 +314,7 @@ None of these are required for basic startup.
 | `SQLITE_SYNCHRONOUS` | `FULL` |
 | `MAX_REQUEST_BODY_BYTES` | `1048576` (1 MiB) |
 | `SCRUMBOY_MODE` | `full` (or `anonymous`) |
-| `SCRUMBOY_ENCRYPTION_KEY` | (empty) - **Required for 2FA.** Base64-encoded 32-byte key. Generate with `openssl rand -base64 32`. Without it, 2FA setup returns 503. |
+| `SCRUMBOY_ENCRYPTION_KEY` | (empty) - **Required for 2FA.** Base64-encoded 32-byte key. Generate with `openssl rand -base64 32`. Without it, 2FA setup returns 503. Back this key up with `data/app.db`; do not replace it casually once encrypted auth/security data exists. |
 | `SCRUMBOY_TLS_CERT` | `./cert.pem` - TLS cert for HTTPS |
 | `SCRUMBOY_TLS_KEY` | `./key.pem` - TLS key for HTTPS |
 | `SCRUMBOY_INTRANET_IP` | `192.168.1.250` - LAN IP to log for intranet access |

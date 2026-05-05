@@ -1,5 +1,6 @@
 @echo off
-cd /d "%~dp0"
+for %%I in ("%~dp0.") do set "REPO_ROOT=%%~fI"
+cd /d "%REPO_ROOT%"
 
 echo.
 echo ========================================
@@ -59,13 +60,23 @@ echo.
 echo Press Ctrl+C to stop the server.
 echo.
 
-REM 2FA encryption key from scrumboy.env (same as f.bat — shared app.db may have 2FA users)
-if exist scrumboy.env (
-  for /f "usebackq delims=" %%K in ("scrumboy.env") do set SCRUMBOY_ENCRYPTION_KEY=%%K
-) else (
-  for /f "delims=" %%K in ('powershell -NoProfile -Command "[Convert]::ToBase64String((1..32 | ForEach-Object { [byte](Get-Random -Maximum 256^) }^)^)"') do set SCRUMBOY_ENCRYPTION_KEY=%%K
-  echo %SCRUMBOY_ENCRYPTION_KEY%>scrumboy.env
-  echo Created scrumboy.env with new key - 2FA will work.
+REM Resolve SCRUMBOY_ENCRYPTION_KEY with the same precedence as full mode.
+REM Anonymous mode can still share app.db with full mode, so the key must match.
+set "SCRUMBOY_KEY_TMP=%TEMP%\scrumboy-key-%RANDOM%-%RANDOM%.tmp"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%\scripts\resolve_scrumboy_encryption_key.ps1" -OutputPath "%SCRUMBOY_KEY_TMP%" -RepoRoot "%REPO_ROOT%"
+if errorlevel 1 (
+  if exist "%SCRUMBOY_KEY_TMP%" del "%SCRUMBOY_KEY_TMP%" >nul 2>&1
+  exit /b 1
+)
+
+for /f "usebackq tokens=1,* delims==" %%A in ("%SCRUMBOY_KEY_TMP%") do (
+  if /I "%%A"=="SCRUMBOY_ENCRYPTION_KEY" set "SCRUMBOY_ENCRYPTION_KEY=%%B"
+)
+del "%SCRUMBOY_KEY_TMP%" >nul 2>&1
+
+if not defined SCRUMBOY_ENCRYPTION_KEY (
+  echo ERROR: failed to resolve SCRUMBOY_ENCRYPTION_KEY.
+  exit /b 1
 )
 
 set SCRUMBOY_MODE=anonymous

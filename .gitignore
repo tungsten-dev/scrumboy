@@ -1,5 +1,6 @@
 # Data and DB (self-hosted instance data)
 /data/
+/data/scrumboy.env
 *.db
 *.db-wal
 *.db-shm
@@ -16,6 +17,7 @@ scrumboy*.tar
 
 # Local 2FA encryption key (do not commit)
 scrumboy.env
+!/scrumboy.env.example
 
 # TLS dev certs (mkcert; do not commit)
 cert.pem
