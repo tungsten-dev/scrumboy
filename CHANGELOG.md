@@ -2,6 +2,16 @@
 
 > **Upgrades:** No breaking changes in **3.7.x** / **3.8.x** / **3.9.x** / **3.10.x** / **3.11.x** / **3.12.x** / **3.13.x** / **3.14.x** / **3.15.x** unless noted below.
 
+## [3.15.4] - 2026-05-05
+
+### Additions
+
+- **Trello import (v1)** - Import a native Trello single-board JSON export into a new Scrumboy project: **`POST /api/import/trello/preview`** (preview counts, hard errors, warnings) and **`POST /api/import/trello`** (transactional durable project import). Board lists map to workflow columns (done-column heuristics, single-open-list synthetic **Done** lane, closed-list cards folded into detected done); labels become project tags; card body includes descriptions, dates, checklists, comments, attachments (links), and custom field text; per-todo and project **`import_metadata`** preserve Trello provenance. UI in **Settings** (backup area): file pick → preview → import when preview has no hard errors. Dedicated body size cap (**`MAX_TRELLO_IMPORT_BYTES`**, default 32 MiB).
+
+### Tests
+
+- **Trello** - Transform and import path coverage (**`internal/trelloimport`**, **`internal/httpapi`**, **`internal/store`**).
+
 ## [3.15.3] - 2026-05-05
 
 ### Improvements
